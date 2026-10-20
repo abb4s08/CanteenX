@@ -22,11 +22,209 @@
     },
     adminData: null,
     recentOrders: [],
-    verifiedToken: null
+    verifiedToken: null,
+    isDemoMode: false
   };
+
+  // Mock Database for Preview / Standalone Static Deployments (e.g. Vercel)
+  const MOCK_DB = {
+    canteens: [
+      { canteenId: 1, name: 'Central Canteen', tokenPrefix: 'CC', active: true, availableItems: 4 },
+      { canteenId: 2, name: 'Nescafe Kiosk', tokenPrefix: 'NK', active: true, availableItems: 3 },
+      { canteenId: 3, name: 'North Food Court', tokenPrefix: 'NFC', active: true, availableItems: 3 }
+    ],
+    menu: [
+      { itemId: 1, canteenId: 1, name: 'Masala Dosa', category: 'Breakfast', price: 60.00, available: true, stockQuantity: 50 },
+      { itemId: 2, canteenId: 1, name: 'Paneer Butter Masala & Roti', category: 'Lunch', price: 120.00, available: true, stockQuantity: 30 },
+      { itemId: 3, canteenId: 1, name: 'South Indian Veg Thali', category: 'Lunch', price: 100.00, available: true, stockQuantity: 40 },
+      { itemId: 4, canteenId: 1, name: 'Cold Coffee with Ice Cream', category: 'Beverages', price: 40.00, available: true, stockQuantity: 60 },
+      { itemId: 5, canteenId: 2, name: 'Rich Hazelnut Cappuccino', category: 'Beverages', price: 45.00, available: true, stockQuantity: 50 },
+      { itemId: 6, canteenId: 2, name: 'Cheese Maggi Noodles', category: 'Snacks', price: 50.00, available: true, stockQuantity: 80 },
+      { itemId: 7, canteenId: 2, name: 'Double Chocolate Brownie', category: 'Bakery', price: 60.00, available: true, stockQuantity: 25 },
+      { itemId: 8, canteenId: 3, name: 'Special Chicken Biryani', category: 'Meals', price: 150.00, available: true, stockQuantity: 45 },
+      { itemId: 9, canteenId: 3, name: 'Schezwan Egg Fried Rice', category: 'Meals', price: 110.00, available: true, stockQuantity: 35 },
+      { itemId: 10, canteenId: 3, name: 'Fresh Mint Lime Soda', category: 'Beverages', price: 30.00, available: true, stockQuantity: 50 }
+    ],
+    orders: [
+      {
+        orderId: 101,
+        tokenNumber: 'CC-8849201',
+        canteenId: 1,
+        canteenName: 'Central Canteen',
+        studentId: 1,
+        studentName: 'Arjun Sharma',
+        totalAmount: 160.00,
+        paymentMethod: 'CAMPUS_UPI',
+        status: 'PLACED',
+        createdAt: new Date().toISOString(),
+        items: [
+          { orderItemId: 201, itemId: 1, itemName: 'Masala Dosa', quantity: 2, pricePerUnit: 60.00, subtotal: 120.00 },
+          { orderItemId: 202, itemId: 4, itemName: 'Cold Coffee with Ice Cream', quantity: 1, pricePerUnit: 40.00, subtotal: 40.00 }
+        ]
+      }
+    ],
+    users: [
+      { id: 1, username: 'student1', role: 'STUDENT', name: 'Arjun Sharma', email: 'arjun.sharma@campus.edu', studentId: 1, balance: 500.0 },
+      { id: 2, username: 'shopkeeper1', role: 'SHOPKEEPER', name: 'Ramesh Kumar', email: 'ramesh@canteen.edu', canteenId: 1, shopkeeperId: 1 },
+      { id: 3, username: 'admin', role: 'ADMIN', name: 'System Administrator', email: 'admin@campus.edu' }
+    ]
+  };
+
+  async function handleMockApi(endpoint, options = {}) {
+    await new Promise(r => setTimeout(r, 100));
+    const method = (options.method || 'GET').toUpperCase();
+    const body = options.body ? JSON.parse(options.body) : {};
+
+    if (endpoint === '/api/canteens') {
+      return { success: true, message: 'Canteens fetched (Preview Demo)', data: MOCK_DB.canteens };
+    }
+    const menuMatch = endpoint.match(/\/api\/canteens\/(\d+)\/menu/);
+    if (menuMatch) {
+      const cid = parseInt(menuMatch[1]);
+      const items = MOCK_DB.menu.filter(m => m.canteenId === cid);
+      return { success: true, message: 'Menu fetched (Preview Demo)', data: items };
+    }
+    if (endpoint === '/api/auth/login') {
+      const u = MOCK_DB.users.find(x => x.username.toLowerCase() === (body.username || '').toLowerCase());
+      if (u) {
+        return {
+          success: true,
+          message: 'Signed in successfully (Preview Demo)',
+          data: {
+            token: 'demo-token-' + u.role.toLowerCase(),
+            user: { ...u }
+          }
+        };
+      }
+      return {
+        success: true,
+        message: 'Demo session created',
+        data: {
+          token: 'demo-token-student',
+          user: { id: 99, username: body.username, role: 'STUDENT', name: body.username, balance: 350.0, studentId: 99 }
+        }
+      };
+    }
+    if (endpoint === '/api/auth/register') {
+      return { success: true, message: 'Student registered successfully (Preview Demo). You may now log in!' };
+    }
+    if (endpoint === '/api/orders' && method === 'POST') {
+      const canteen = MOCK_DB.canteens.find(c => c.canteenId === parseInt(body.canteenId)) || MOCK_DB.canteens[0];
+      const tokenNum = `${canteen.tokenPrefix}-${Math.floor(1000000 + Math.random() * 9000000)}`;
+      const newOrder = {
+        orderId: Math.floor(1000 + Math.random() * 9000),
+        tokenNumber: tokenNum,
+        canteenId: canteen.canteenId,
+        canteenName: canteen.name,
+        studentId: (state.user && state.user.studentId) || 1,
+        studentName: (state.user && state.user.name) || 'Student Arjun',
+        totalAmount: (body.items || []).reduce((acc, it) => acc + (it.price || it.pricePerUnit || 50) * it.quantity, 0),
+        paymentMethod: body.paymentMethod || 'CAMPUS_UPI',
+        status: 'PLACED',
+        createdAt: new Date().toISOString(),
+        items: (body.items || []).map((it, idx) => ({
+          orderItemId: idx + 1,
+          itemId: it.itemId,
+          itemName: it.name || 'Food Item',
+          quantity: it.quantity,
+          pricePerUnit: it.price || 50,
+          subtotal: (it.price || 50) * it.quantity
+        }))
+      };
+      MOCK_DB.orders.unshift(newOrder);
+      return { success: true, message: 'Order placed & token generated successfully (Preview Demo)', data: newOrder };
+    }
+    if (endpoint.includes('/api/orders/my-orders') || (endpoint.startsWith('/api/orders') && method === 'GET')) {
+      return { success: true, message: 'Orders fetched (Preview Demo)', data: MOCK_DB.orders };
+    }
+    const activeMatch = endpoint.match(/\/api\/orders\/canteen\/(\d+)\/active/);
+    if (activeMatch) {
+      const cid = parseInt(activeMatch[1]);
+      const active = MOCK_DB.orders.filter(o => o.canteenId === cid && o.status === 'PLACED');
+      return { success: true, message: 'Active counter orders fetched (Preview Demo)', data: active };
+    }
+    if (endpoint.startsWith('/api/tokens/verify')) {
+      const tokenQuery = new URLSearchParams(endpoint.split('?')[1] || '').get('tokenNumber') || '';
+      const found = MOCK_DB.orders.find(o => o.tokenNumber.trim().toUpperCase() === tokenQuery.trim().toUpperCase());
+      if (found) {
+        return {
+          success: true,
+          message: 'Token verified',
+          data: {
+            valid: true,
+            orderId: found.orderId,
+            tokenNumber: found.tokenNumber,
+            canteenId: found.canteenId,
+            canteenName: found.canteenName,
+            studentName: found.studentName,
+            status: found.status,
+            createdAt: found.createdAt,
+            totalAmount: found.totalAmount,
+            items: found.items
+          }
+        };
+      }
+      return {
+        success: false,
+        message: `Token '${tokenQuery}' not found in active order registry.`,
+        data: { valid: false }
+      };
+    }
+    if (endpoint.startsWith('/api/tokens/handover')) {
+      const tokenNum = new URLSearchParams(endpoint.split('?')[1] || '').get('tokenNumber') || '';
+      const order = MOCK_DB.orders.find(o => o.tokenNumber.toUpperCase() === tokenNum.toUpperCase());
+      if (order) {
+        order.status = 'COLLECTED';
+        order.collectedAt = new Date().toISOString();
+        return { success: true, message: `Token ${tokenNum} successfully verified and handed over! Order marked COLLECTED.` };
+      }
+      return { success: false, message: 'Token not found for handover' };
+    }
+    if (endpoint === '/api/admin/dashboard') {
+      const totalRev = MOCK_DB.orders.reduce((acc, o) => acc + o.totalAmount, 0) + 12400;
+      return {
+        success: true,
+        message: 'Admin Dashboard loaded (Preview Demo)',
+        data: {
+          totalOrders: MOCK_DB.orders.length + 84,
+          totalRevenue: totalRev,
+          activeTokens: MOCK_DB.orders.filter(o => o.status === 'PLACED').length,
+          collectedTokens: MOCK_DB.orders.filter(o => o.status === 'COLLECTED').length + 75,
+          canteensSummary: MOCK_DB.canteens.map(c => ({
+            canteenId: c.canteenId,
+            name: c.name,
+            totalRevenue: (totalRev / 3).toFixed(2),
+            orderCount: Math.floor((MOCK_DB.orders.length + 84) / 3)
+          }))
+        }
+      };
+    }
+    if (endpoint.startsWith('/api/menu') && method === 'POST') {
+      const newItem = {
+        itemId: Math.floor(100 + Math.random() * 900),
+        canteenId: parseInt(body.canteenId) || 1,
+        name: body.name || 'New Item',
+        category: body.category || 'Snacks',
+        price: parseFloat(body.price) || 50.0,
+        available: true,
+        stockQuantity: parseInt(body.stockQuantity) || 50
+      };
+      MOCK_DB.menu.push(newItem);
+      return { success: true, message: 'Item added successfully (Preview Demo)', data: newItem };
+    }
+
+    return { success: true, message: 'Operation simulated in preview mode', data: {} };
+  }
 
   // API helper with JSON and Auth header
   async function api(endpoint, options = {}) {
+    const apiBase = window.CANTEENX_API_URL || localStorage.getItem('cx_api_url') || '';
+    const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
+
+    if (state.isDemoMode && !apiBase) {
+      return handleMockApi(endpoint, options);
+    }
+
     const headers = options.headers || {};
     if (state.token) {
       headers['Authorization'] = `Bearer ${state.token}`;
@@ -38,7 +236,7 @@
     options.headers = headers;
 
     try {
-      const res = await fetch(endpoint, options);
+      const res = await fetch(url, options);
       if (res.status === 401 || res.status === 403) {
         if (state.token && !endpoint.includes('/api/auth/login')) {
           showToast('Session expired or unauthorized. Please sign in again.', 'error');
@@ -58,6 +256,17 @@
       }
       return json;
     } catch (err) {
+      if (!apiBase && (err.name === 'TypeError' || err.message.includes('fetch') || err.message.includes('404'))) {
+        console.warn(`Backend unreachable on ${endpoint}, switching to interactive preview mode.`, err);
+        state.isDemoMode = true;
+        const pill = document.getElementById('health-pill');
+        const label = document.getElementById('health-label');
+        if (pill && label) {
+          pill.className = 'health-pill demo';
+          label.textContent = 'Preview Mode (Interactive Demo)';
+        }
+        return handleMockApi(endpoint, options);
+      }
       console.error(`API Error on ${endpoint}:`, err);
       throw err;
     }
@@ -84,10 +293,14 @@
     const label = document.getElementById('health-label');
     if (!pill || !label) return;
 
+    const apiBase = window.CANTEENX_API_URL || localStorage.getItem('cx_api_url') || '';
+    const url = `${apiBase}/api/health`;
+
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.data && data.data.status === 'UP') {
+        state.isDemoMode = false;
         pill.className = 'health-pill up';
         label.textContent = 'Backend UP — MySQL Connected';
       } else {
@@ -95,8 +308,9 @@
         label.textContent = 'Backend Degraded — MySQL Offline';
       }
     } catch (e) {
-      pill.className = 'health-pill down';
-      label.textContent = 'Backend Offline';
+      state.isDemoMode = true;
+      pill.className = 'health-pill demo';
+      label.textContent = 'Preview Mode (Interactive Demo)';
     }
   }
 
