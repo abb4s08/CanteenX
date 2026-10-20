@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanteenX — Digital Canteen Token Management Platform</title>
+  <meta name="description" content="Order smart. Skip the queue. Multi-canteen digital food ordering and token handover platform.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Top App Navigation Bar -->
+  <header class="header-navbar">
+    <div class="header-container">
+      <div class="brand-wrapper" onclick="CanteenXApp.navigate('landing')">
+        <div class="brand-icon">CX</div>
+        <div class="brand-title">
+          <span>CANTEENX</span>
+          <span class="brand-tagline">Order Smart · Skip The Queue</span>
+        </div>
+      </div>
+
+      <!-- Real Backend & MySQL Health Indicator -->
+      <div id="health-pill" class="health-pill">
+        <span class="health-dot"></span>
+        <span id="health-label">Checking Backend...</span>
+      </div>
+
+      <nav class="nav-actions">
+        <button class="nav-btn active" data-view="landing" onclick="CanteenXApp.navigate('landing')">Campus Outlets</button>
+        <button class="nav-btn" id="nav-link-student" data-view="student" style="display:none;" onclick="CanteenXApp.navigate('student')">Student Ordering</button>
+        <button class="nav-btn" id="nav-link-shopkeeper" data-view="shopkeeper" style="display:none;" onclick="CanteenXApp.navigate('shopkeeper')">Shopkeeper Terminal</button>
+        <button class="nav-btn" id="nav-link-admin" data-view="admin" style="display:none;" onclick="CanteenXApp.navigate('admin')">Admin Suite</button>
+        <button class="nav-btn" onclick="CanteenXApp.openModal('modal-tour')">Demo Tour 🧭</button>
+
+        <!-- Guest state -->
+        <div id="nav-guest-container" style="display:flex; gap:0.5rem;">
+          <button class="btn btn-outline btn-sm" onclick="CanteenXApp.openModal('modal-login')">Sign In</button>
+          <button class="btn btn-primary btn-sm" onclick="CanteenXApp.openModal('modal-register')">Register</button>
+        </div>
+
+        <!-- Logged in state -->
+        <div id="nav-user-container" style="display:none; align-items:center; gap:0.6rem;">
+          <div class="user-pill">
+            <span id="nav-user-name">User</span>
+            <span id="nav-user-role" class="user-role-badge">STUDENT</span>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="CanteenXApp.logout()">Sign Out</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Application Content Area -->
+  <main class="main-content">
+
+    <!-- ==========================================
+         VIEW 1: LANDING & CANTEEN DISCOVERY
+         ========================================== -->
+    <section id="view-landing" class="app-view active">
+      <div class="hero-section">
+        <div class="hero-pill">✨ DIGITAL CAMPUS DINING PLATFORM</div>
+        <h1 class="hero-title">Good Food. <span>Less Waiting.</span></h1>
+        <p class="hero-desc">
+          One campus. Multiple canteens. One seamless experience. Order from REC Cafe or REC Hut, generate your unique digital token, and pick up your meal without standing in token lines.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" onclick="CanteenXApp.openModal('modal-login')">Access Workspace →</button>
+          <button class="btn btn-outline" onclick="CanteenXApp.openModal('modal-tour')">Interactive Demo Guide</button>
+          <button class="btn btn-sm btn-outline" onclick="CanteenXApp.seedDemoAccounts()">Verify / Seed Demo Accounts</button>
+        </div>
+      </div>
+
+      <!-- Quick-Fill Evaluator Demo Accounts Banner -->
+      <div class="demo-accounts-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h4 style="font-size:0.95rem; font-weight:700;">Academic Evaluation Quick Sign-in</h4>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Click any demo identity below to instantly sign in and test the corresponding workspace:</p>
+          </div>
+          <span class="outlet-badge" style="background:#eef8f2; color:var(--primary);">BCrypt Hashed · MySQL Verified</span>
+        </div>
+        <div class="demo-pills-row">
+          <div class="demo-login-chip" onclick="CanteenXApp.quickLogin('student@canteenx.local', 'student123')">
+            <span>🎓</span>
+            <div><strong>Aarav (Student)</strong> <span style="color:var(--text-muted);">student@canteenx.local</span></div>
+          </div>
+          <div class="demo-login-chip" onclick="CanteenXApp.quickLogin('cafe@canteenx.local', 'cafe123')">
+            <span>☕</span>
+            <div><strong>REC Cafe Counter</strong> <span style="color:var(--text-muted);">cafe@canteenx.local</span></div>
+          </div>
+          <div class="demo-login-chip" onclick="CanteenXApp.quickLogin('hut@canteenx.local', 'hut123')">
+            <span>🍔</span>
+            <div><strong>REC Hut Counter</strong> <span style="color:var(--text-muted);">hut@canteenx.local</span></div>
+          </div>
+          <div class="demo-login-chip" onclick="CanteenXApp.quickLogin('admin@canteenx.local', 'admin123')">
+            <span>🛡️</span>
+            <div><strong>Campus Admin</strong> <span style="color:var(--text-muted);">admin@canteenx.local</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Canteens Loaded from MySQL -->
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Campus Food Outlets</h2>
+          <p class="section-subtitle">Real-time status loaded dynamically from MySQL</p>
+        </div>
+      </div>
+      <div id="landing-outlets-grid" class="outlets-grid">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Workspaces Overview Cards -->
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">System Capabilities</h2>
+          <p class="section-subtitle">Role-based workspaces designed for high-volume campus operations</p>
+        </div>
+      </div>
+      <div class="workspaces-grid">
+        <div class="workspace-card" onclick="CanteenXApp.quickLogin('student@canteenx.local', 'student123')">
+          <div class="workspace-icon" style="background:#e8f5e9; color:var(--primary);">🎓</div>
+          <h3 class="workspace-title">Student Workspace</h3>
+          <p class="workspace-desc">Browse real-time outlet menus, manage single-canteen cart, choose simulated campus payment, and view high-contrast digital tokens.</p>
+          <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">Launch Student View →</span>
+        </div>
+        <div class="workspace-card" onclick="CanteenXApp.quickLogin('cafe@canteenx.local', 'cafe123')">
+          <div class="workspace-icon" style="background:#fff3cd; color:var(--warning-text);">🏪</div>
+          <h3 class="workspace-title">Shopkeeper Terminal</h3>
+          <p class="workspace-desc">Fast counter verification with scanner/keyboard support, outlet isolation, and atomic single-redemption protection.</p>
+          <span style="font-size:0.85rem; font-weight:700; color:var(--warning-text);">Launch Terminal →</span>
+        </div>
+        <div class="workspace-card" onclick="CanteenXApp.quickLogin('admin@canteenx.local', 'admin123')">
+          <div class="workspace-icon" style="background:#cff4fc; color:var(--info-text);">📊</div>
+          <h3 class="workspace-title">Administrator Suite</h3>
+          <p class="workspace-desc">Real-time revenue KPIs, top-selling dishes, full menu CRUD with soft-delete, staff overview, and CSV sales report export.</p>
+          <span style="font-size:0.85rem; font-weight:700; color:var(--info-text);">Launch Admin Suite →</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 2: STUDENT WORKSPACE & ORDERING
+         ========================================== -->
+    <section id="view-student" class="app-view">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+        <div>
+          <h2 class="section-title">Student Food Ordering</h2>
+          <p class="section-subtitle">Select your outlet, add dishes, and receive an authentic digital token</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="CanteenXApp.navigate('student')">Refresh Menu 🔄</button>
+      </div>
+
+      <!-- Ordering Layout with Cart Drawer -->
+      <div class="ordering-layout">
+        <!-- Left: Menu Area -->
+        <div>
+          <div class="ordering-toolbar">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <label for="student-canteen-select" style="font-size:0.85rem; font-weight:700;">Outlet:</label>
+              <select id="student-canteen-select" class="form-control" style="width:auto; min-width:180px;" onchange="CanteenXApp.onCanteenChange()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="filter-pills">
+              <button class="filter-pill active" data-cat="ALL" onclick="CanteenXApp.filterCategory('ALL')">All Dishes</button>
+              <button class="filter-pill" data-cat="Breakfast" onclick="CanteenXApp.filterCategory('Breakfast')">Breakfast</button>
+              <button class="filter-pill" data-cat="Beverages" onclick="CanteenXApp.filterCategory('Beverages')">Beverages</button>
+              <button class="filter-pill" data-cat="Snacks" onclick="CanteenXApp.filterCategory('Snacks')">Snacks</button>
+              <button class="filter-pill" data-cat="Meals" onclick="CanteenXApp.filterCategory('Meals')">Meals</button>
+            </div>
+            <div style="min-width:200px;">
+              <input type="text" id="student-search-input" class="form-control" placeholder="Search dish..." oninput="CanteenXApp.onSearchChange(this.value)">
+            </div>
+          </div>
+
+          <!-- Dishes Grid -->
+          <div id="student-menu-grid" class="menu-grid">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Order History Tab -->
+          <div style="margin-top:3rem;">
+            <div class="section-header">
+              <div>
+                <h3 class="section-title" style="font-size:1.3rem;">My Order History & Tokens</h3>
+                <p class="section-subtitle">Review active tokens and previous dining receipts</p>
+              </div>
+            </div>
+            <div id="student-orders-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Sticky Single-Canteen Cart Drawer -->
+        <div>
+          <div class="cart-card">
+            <div class="cart-header">
+              <div>
+                <h3 style="font-size:1.15rem; font-weight:700;">Your Cart</h3>
+                <span id="cart-canteen-badge" class="outlet-badge" style="font-size:0.7rem;">Cart is Empty</span>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="CanteenXApp.clearCart()">Clear</button>
+            </div>
+
+            <div id="cart-items-list" class="cart-items-list">
+              <!-- Cart rows rendered dynamically -->
+            </div>
+
+            <div class="cart-total-box">
+              <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted); margin-bottom:0.4rem;">
+                <span>Subtotal</span>
+                <span id="cart-subtotal">₹0.00</span>
+              </div>
+              <div class="cart-total-row">
+                <span>Final Total</span>
+                <span id="cart-total">₹0.00</span>
+              </div>
+              <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem;">
+                * Authoritative prices validated directly against MySQL database at checkout.
+              </p>
+            </div>
+
+            <button id="btn-cart-checkout" class="btn btn-primary btn-block" disabled onclick="CanteenXApp.openCheckoutModal()">
+              Proceed to Demo Checkout →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 3: SHOPKEEPER TERMINAL
+         ========================================== -->
+    <section id="view-shopkeeper" class="app-view">
+      <div class="shopkeeper-terminal-card">
+        <div style="text-align:center; margin-bottom:1.5rem;">
+          <span class="outlet-badge" style="font-size:0.8rem; margin-bottom:0.5rem; display:inline-block;">COUNTER VERIFICATION TERMINAL</span>
+          <h2 id="shopkeeper-canteen-title" style="font-size:1.8rem; font-weight:800; color:var(--text-main);">REC Cafe Counter</h2>
+          <p style="font-size:0.85rem; color:var(--text-muted);">
+            Scan barcode or enter digital token code to verify order status and record atomic food handover.
+          </p>
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <label for="shopkeeper-token-input" class="form-label" style="text-align:center;">Enter Student Token Code</label>
+          <input type="text" id="shopkeeper-token-input" class="form-control token-input-field" placeholder="CAF-0000001" autocomplete="off">
+          <div style="display:flex; gap:0.75rem; margin-top:0.75rem;">
+            <button class="btn btn-primary" style="flex:1;" onclick="CanteenXApp.verifyShopkeeperToken()">Verify Token 🔍</button>
+            <button class="btn btn-outline" onclick="document.getElementById('shopkeeper-token-input').value=''; CanteenXApp.verifyShopkeeperToken();">Clear</button>
+          </div>
+        </div>
+
+        <!-- Verification Result Status Box -->
+        <div id="shopkeeper-status-box" style="display:none;" class="status-callout"></div>
+
+        <!-- Order Breakdown -->
+        <div id="shopkeeper-details-box" style="display:none; background:var(--bg-subtle); border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem;"></div>
+
+        <!-- Handover Confirmation Action -->
+        <button id="btn-confirm-handover" class="btn btn-accent btn-block" style="padding:0.9rem; font-size:1.05rem;" disabled onclick="CanteenXApp.confirmTokenHandover()">
+          ✓ Confirm Handover & Redeem Token
+        </button>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 4: ADMINISTRATOR SUITE
+         ========================================== -->
+    <section id="view-admin" class="app-view">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <h2 class="section-title">Administrator Campus Suite</h2>
+          <p class="section-subtitle">Real-time revenue metrics, multi-canteen sales analytics, and menu CRUD</p>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <button class="btn btn-outline btn-sm" onclick="CanteenXApp.downloadCsvReport()">
+            Download Sales Report (CSV) 📥
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="CanteenXApp.openCreateMenuModal()">
+            + Add New Dish
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-Time KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Campus Revenue</div>
+          <div id="kpi-revenue" class="kpi-value">₹0.00</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">Paid eligible orders only</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Orders Placed</div>
+          <div id="kpi-orders" class="kpi-value">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">All outlets combined</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Waiting At Counter</div>
+          <div id="kpi-pending" class="kpi-value" style="color:var(--accent);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">Active unredeemed tokens</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Redeemed Orders</div>
+          <div id="kpi-redeemed" class="kpi-value" style="color:var(--success);">0</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">Handover recorded in DB</div>
+        </div>
+      </div>
+
+      <!-- Outlet Comparison Metrics -->
+      <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:0.75rem;">Revenue & Order Volume by Canteen Outlet</h3>
+      <div id="admin-outlet-metrics-container" class="outlets-grid" style="margin-bottom:2rem;"></div>
+
+      <!-- Top 10 Best-Selling Dishes Table -->
+      <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:0.75rem;">Top 10 Best-Selling Dishes (Aggregated)</h3>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Dish Name</th>
+              <th>Quantity Sold</th>
+              <th>Total Revenue Generated</th>
+            </tr>
+          </thead>
+          <tbody id="admin-top-dishes-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Menu Management Studio -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <h3 style="font-size:1.15rem; font-weight:700;">Menu Management Studio (All Outlets)</h3>
+        <span style="font-size:0.8rem; color:var(--text-muted);">Soft deletion retains historical order receipts</span>
+      </div>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item ID</th>
+              <th>Outlet</th>
+              <th>Dish Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-menu-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- User & Staff Overview -->
+      <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:0.75rem;">Active Accounts & Roles</h3>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Assigned Outlet</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Live Audit Logs -->
+      <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:0.75rem;">System Audit Trail (Security & Redemption Events)</h3>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Event</th>
+              <th>Actor</th>
+              <th>Description</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="admin-audit-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODALS
+       ========================================== -->
+
+  <!-- Modal: Sign In -->
+  <div id="modal-login" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Sign In to CanteenX</h3>
+        <button class="modal-close" onclick="CanteenXApp.closeModal('modal-login')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Campus Email</label>
+          <input type="email" id="login-email" class="form-control" placeholder="name@canteenx.local" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="CanteenXApp.submitLogin()">Sign In →</button>
+
+        <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border-light);">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:0.5rem;">QUICK 1-CLICK DEMO ACCOUNTS:</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem;">
+            <button class="btn btn-sm btn-outline" onclick="CanteenXApp.quickLogin('student@canteenx.local','student123')">🎓 Student</button>
+            <button class="btn btn-sm btn-outline" onclick="CanteenXApp.quickLogin('cafe@canteenx.local','cafe123')">☕ Cafe Counter</button>
+            <button class="btn btn-sm btn-outline" onclick="CanteenXApp.quickLogin('hut@canteenx.local','hut123')">🍔 Hut Counter</button>
+            <button class="btn btn-sm btn-outline" onclick="CanteenXApp.quickLogin('admin@canteenx.local','admin123')">🛡️ Campus Admin</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span style="font-size:0.8rem; color:var(--text-muted);">New student?</span>
+        <button class="btn btn-sm btn-outline" onclick="CanteenXApp.closeModal('modal-login'); CanteenXApp.openModal('modal-register')">Register Student Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Student Registration -->
+  <div id="modal-register" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Student Registration</h3>
+        <button class="modal-close" onclick="CanteenXApp.closeModal('modal-register')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" class="form-control" placeholder="e.g. Priya Sharma" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">College Email</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="priya@college.edu" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password (min 6 characters)</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="CanteenXApp.submitRegister()">Create Student Account →</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm btn-outline" onclick="CanteenXApp.closeModal('modal-register'); CanteenXApp.openModal('modal-login')">Already have an account? Sign in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Checkout with Simulated Demo Payments -->
+  <div id="modal-checkout" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Order & Demo Payment</h3>
+        <button class="modal-close" onclick="CanteenXApp.closeModal('modal-checkout')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--bg-subtle); padding:1rem; border-radius:var(--radius-md); margin-bottom:1.25rem;">
+          <div style="font-size:0.8rem; color:var(--text-muted);">OUTLET</div>
+          <div id="checkout-outlet-name" style="font-weight:700; font-size:1.1rem;">REC Cafe</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">TOTAL AMOUNT (TRUSTED MENU PRICES)</div>
+          <div id="checkout-amount-display" style="font-weight:800; font-size:1.6rem; color:var(--primary);">₹0.00</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Demo Payment Method:</label>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <label style="display:flex; align-items:center; gap:0.6rem; padding:0.65rem; border:1px solid var(--border-light); border-radius:var(--radius-md); cursor:pointer;">
+              <input type="radio" name="checkout-payment" value="CAMPUS_UPI" checked>
+              <div>
+                <strong>Instant Campus UPI (Simulation)</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Simulated instant QR scan and approval</div>
+              </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.6rem; padding:0.65rem; border:1px solid var(--border-light); border-radius:var(--radius-md); cursor:pointer;">
+              <input type="radio" name="checkout-payment" value="SMART_CARD">
+              <div>
+                <strong>Student RFID Smart Card (Simulation)</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Simulated student card balance deduction</div>
+              </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:0.6rem; padding:0.65rem; border:1px solid var(--border-light); border-radius:var(--radius-md); cursor:pointer;">
+              <input type="radio" name="checkout-payment" value="CASH">
+              <div>
+                <strong>Counter Cash Record (Simulation)</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Simulated cash token reservation</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-muted); background:#fff9e6; border-left:3px solid var(--warning); padding:0.6rem; border-radius:4px;">
+          ⚠️ <strong>Academic Project Disclosure:</strong> Payments are simulated demonstration records only. No real money or bank transfers are processed.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="CanteenXApp.closeModal('modal-checkout')">Cancel</button>
+        <button class="btn btn-primary" onclick="CanteenXApp.submitOrder()">Confirm & Generate Token →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: High-Contrast Digital Token Receipt -->
+  <div id="modal-receipt" class="modal-backdrop">
+    <div class="token-receipt-modal">
+      <div class="token-receipt-header">
+        <div style="font-size:0.8rem; font-weight:700; letter-spacing:0.06em; opacity:0.85;">DIGITAL CANTEEN TOKEN</div>
+        <div id="receipt-token-code" class="token-badge-display">CAF-0000001</div>
+        <div id="receipt-outlet-name" style="font-size:1.15rem; font-weight:700;">REC Cafe</div>
+        <div style="font-size:0.75rem; opacity:0.85; margin-top:0.25rem;">Present this token at the counter for pickup</div>
+      </div>
+      <div class="token-receipt-body">
+        <table class="receipt-data-table">
+          <tr>
+            <td>Order Reference:</td>
+            <td id="receipt-order-id">#101</td>
+          </tr>
+          <tr>
+            <td>Date & Time:</td>
+            <td id="receipt-timestamp">Oct 20, 2026</td>
+          </tr>
+          <tr>
+            <td>Payment Method:</td>
+            <td id="receipt-payment-method">CAMPUS UPI</td>
+          </tr>
+          <tr>
+            <td>Payment Status:</td>
+            <td><span id="receipt-payment-status" class="outlet-badge" style="background:var(--success-bg); color:var(--success-text);">DEMO_PAID</span></td>
+          </tr>
+        </table>
+
+        <div style="border-top:1px dashed var(--border-light); padding-top:0.75rem; margin-bottom:0.75rem;">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:0.5rem;">ORDERED DISHES</div>
+          <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+            <tbody id="receipt-items-tbody"></tbody>
+          </table>
+        </div>
+
+        <div style="border-top:2px solid var(--text-main); padding-top:0.75rem; display:flex; justify-content:space-between; align-items:center; font-size:1.25rem; font-weight:800;">
+          <span>Total Paid:</span>
+          <span id="receipt-total-amount" style="color:var(--primary);">₹0.00</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" onclick="window.print()">Print Receipt 🖨️</button>
+        <button class="btn btn-primary btn-sm" onclick="CanteenXApp.closeModal('modal-receipt')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Admin Add/Edit Menu Item -->
+  <div id="modal-dish" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-dish-title" class="modal-title">Add Menu Item</h3>
+        <button class="modal-close" onclick="CanteenXApp.closeModal('modal-dish')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="admin-dish-id">
+        <div class="form-group">
+          <label class="form-label" for="admin-dish-canteen">Canteen Outlet</label>
+          <select id="admin-dish-canteen" class="form-control">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="admin-dish-name">Dish Name</label>
+          <input type="text" id="admin-dish-name" class="form-control" placeholder="e.g. Masala Dosa" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="admin-dish-category">Category</label>
+          <select id="admin-dish-category" class="form-control">
+            <option value="Breakfast">Breakfast</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Meals">Meals</option>
+            <option value="Desserts">Desserts</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="admin-dish-price">Price in Rupees (₹)</label>
+          <input type="number" step="0.50" min="0" id="admin-dish-price" class="form-control" placeholder="65.00" required>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:0.6rem;">
+          <input type="checkbox" id="admin-dish-available" checked style="width:18px; height:18px;">
+          <label for="admin-dish-available" style="font-size:0.85rem; font-weight:600; cursor:pointer;">Available for immediate student ordering</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="CanteenXApp.closeModal('modal-dish')">Cancel</button>
+        <button class="btn btn-primary" onclick="CanteenXApp.saveMenuItem()">Save Dish to Database</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Interactive Academic Demo Tour -->
+  <div id="modal-tour" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width:620px;">
+      <div class="modal-header">
+        <h3 class="modal-title">CanteenX Academic Demo Tour 🧭</h3>
+        <button class="modal-close" onclick="CanteenXApp.closeModal('modal-tour')">×</button>
+      </div>
+      <div class="modal-body">
+        <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem; color:var(--primary);">Evaluation Workflow Guide:</h4>
+        <ol style="padding-left:1.25rem; font-size:0.9rem; line-height:1.6; margin-bottom:1.25rem;">
+          <li><strong>Step 1 (Student Ordering):</strong> Sign in as <code>student@canteenx.local / student123</code>. Select REC Cafe, add items to cart, test single-canteen cart protection by attempting to switch to REC Hut, complete checkout with simulated UPI, and observe the high-contrast digital token (e.g. <code>CAF-0000001</code>).</li>
+          <li><strong>Step 2 (Counter Handover):</strong> Sign in as REC Cafe Counter (<code>cafe@canteenx.local / cafe123</code>). Enter the token code. Observe order verification, ordered items, and click "Confirm Handover". Test duplicate redemption rejection by entering the same token again.</li>
+          <li><strong>Step 3 (Counter Isolation):</strong> Attempt to verify a REC Hut token (<code>HUT-0000001</code>) from the REC Cafe counter. Observe backend authorization rejection (<code>Access Denied: belongs to another outlet</code>).</li>
+          <li><strong>Step 4 (Admin Intelligence):</strong> Sign in as <code>admin@canteenx.local / admin123</code>. View live revenue KPIs, outlet metrics, best-selling dishes, create/edit dishes, review the audit log, and download the sales CSV report.</li>
+        </ol>
+
+        <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem; color:var(--primary);">OOP & DBMS Concepts Demonstrated:</h4>
+        <ul style="padding-left:1.25rem; font-size:0.85rem; color:var(--text-muted); line-height:1.6;">
+          <li><strong>Encapsulation & Abstraction:</strong> Service layer hides direct SQL and manages ACID transaction boundaries.</li>
+          <li><strong>Inheritance & Polymorphism:</strong> Abstract <code>User</code> hierarchy (Student, Shopkeeper, Admin); polymorphic <code>PaymentStrategy</code> implementations.</li>
+          <li><strong>DBMS Concurrency:</strong> <code>SELECT ... FOR UPDATE</code> on <code>token_counters</code> guarantees unique sequential token codes under simultaneous student requests.</li>
+          <li><strong>Atomic Redemption:</strong> Conditional <code>UPDATE ... WHERE order_status='PLACED'</code> guarantees no token can be handed over twice.</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="CanteenXApp.closeModal('modal-tour')">Got it! Start Demo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Footer -->
+  <footer class="app-footer">
+    <p><strong>CanteenX — Digital Canteen Token Management Platform</strong></p>
+    <p style="font-size:0.75rem; margin-top:0.25rem;">
+      Java 17 LTS · Spring Boot 3.3.4 · MySQL 8.0 InnoDB · BCrypt Security · Semester Academic Project
+    </p>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
